@@ -1,0 +1,101 @@
+{
+   "AWSTemplateFormatVersion" : "2010-09-09",
+   "Description" : "Template for Infra creation on AWS for rancher server with 3 clients",
+
+  "Mappings" : {
+    "ami" : {
+      "usw2" : { "ubuntu14" : "ami-64a36b04", "windows2012core" : "ami-91a7bef0" }
+    },
+    "usw2subnets" : {
+      "pri1" : { "z1" : "subnet-c129ada5" },
+      "pri2" : { "z2" : "subnet-da2af4ac" },
+      "pub1" : { "z1" : "subnet-c029ada4" },
+      "pub2" : { "z2" : "subnet-db2af4ad" }
+    },
+    "usw2secgroups" : {
+      "default" : { "default" : "sg-0e8e6668" },
+     "rancher-server": {"default": "sg-deb7c6b8" }
+    },
+    "az" : {
+      "usw2a" : { "az1" : "us-west-2a" },
+      "usw2b" : { "az2" : "us-west-2b" }
+    }
+  },
+
+  "Resources" : {
+      "RancherServerScalingGroup" : {
+         "Type" : "AWS::AutoScaling::AutoScalingGroup",
+         "Properties" : {
+            "VPCZoneIdentifier" : [
+            { "Fn::FindInMap" : [ "usw2subnets", "pri1", "z1"]},
+            { "Fn::FindInMap" : [ "usw2subnets", "pri2", "z2"]}
+            ],
+            "LaunchConfigurationName" : { "Ref" : "RancherServerLaunchConfig" },
+            "MinSize" : "1",
+            "MaxSize" : "3",
+            "Tags" : [
+            { "Key" : "Name", "Value" : "rancher-server", "PropagateAtLaunch" : "true" },
+            { "Key" : "Email", "Value" : "groupemail@gracenote.com", "PropagateAtLaunch" : "true" },
+            { "Key" : "Region", "Value" : "See Wiki: DevOps - Instance Tagging Guidelines", "PropagateAtLaunch" : "true" },
+            { "Key" : "ProjectCode", "Value" : "See Wiki: DevOps - Instance Tagging Guidelines", "PropagateAtLaunch" : "true" },
+            { "Key" : "DepartmentCode", "Value" : "See Wiki: DevOps - Instance Tagging Guidelines", "PropagateAtLaunch" : "true" }
+            ]
+         }
+      },
+
+      "RancherClientScalingGroup" : {
+         "Type" : "AWS::AutoScaling::AutoScalingGroup",
+         "Properties" : {
+            "VPCZoneIdentifier" : [
+            { "Fn::FindInMap" : [ "usw2subnets", "pri1", "z1"]},
+            { "Fn::FindInMap" : [ "usw2subnets", "pri2", "z2"]}
+            ],
+            "LaunchConfigurationName" : { "Ref" : "RancherClientConfig" },
+            "MinSize" : "3",
+            "MaxSize" : "5",
+            "Tags" : [
+            { "Key" : "Name", "Value" : "rancher-client", "PropagateAtLaunch" : "true" },
+            { "Key" : "Email", "Value" : "groupemail@gracenote.com", "PropagateAtLaunch" : "true" },
+            { "Key" : "Region", "Value" : "See Wiki: DevOps - Instance Tagging Guidelines", "PropagateAtLaunch" : "true" },
+            { "Key" : "ProjectCode", "Value" : "See Wiki: DevOps - Instance Tagging Guidelines", "PropagateAtLaunch" : "true" },
+            { "Key" : "DepartmentCode", "Value" : "See Wiki: DevOps - Instance Tagging Guidelines", "PropagateAtLaunch" : "true" }
+            ]
+         }
+      },
+
+      "RancherServerLaunchConfig" : {
+         "Type" : "AWS::AutoScaling::LaunchConfiguration",
+         "Properties" : {
+            "ImageId" : { "Fn::FindInMap" : [ "ami", "usw2", "ubuntu14"]},
+            "KeyName" : "akamat",
+            "IamInstanceProfile" : "arn:aws:iam::520541278860:instance-profile/us-west-2-nonprod-iam-depts-instance-roles-gn5454ITInstanceProfile-17H7R24JMGS1I",
+            "SecurityGroups" : [{ "Fn::FindInMap" : [ "usw2secgroups", "default", "default"]},
+                                {"Fn::FindInMap" : ["usw2secgroups","rancher-server","default"]}
+            ],
+            "InstanceType" : "t2.micro",
+            "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+               "#!/bin/bash -v\n",
+               "apt-get update && apt-get install -y wget\n",
+               "wget  -qO- https://get.docker.com/|sh\n",
+               "docker run -d --restart=unless-stopped -p 8080:8080 rancher/server\n"
+
+               ]]}}
+         }
+      },
+      "RancherClientConfig" : {
+         "Type" : "AWS::AutoScaling::LaunchConfiguration",
+         "Properties" : {
+            "ImageId" : { "Fn::FindInMap" : [ "ami", "usw2", "ubuntu14"]},
+            "KeyName" : "akamat",
+            "IamInstanceProfile" : "arn:aws:iam::520541278860:instance-profile/us-west-2-nonprod-iam-depts-instance-roles-gn5454ITInstanceProfile-17H7R24JMGS1I",
+            "SecurityGroups" : [{ "Fn::FindInMap" : [ "usw2secgroups", "default", "default"]}],
+            "InstanceType" : "t2.micro",
+            "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+               "#!/bin/bash -v\n",
+               "apt-get update && apt-get install -y wget\n",
+               "wget -qO- https://get.docker.com/|sh \n"
+               ]]}}
+         }
+      }
+   }
+}

@@ -14,9 +14,10 @@ Vagrant.configure("2") do |config|
   rancher_server.vm.box = "ubuntu/trusty64"
   rancher_server.vm.hostname = "rancher-server"
 
-  rancher_server.vm.network "forwarded_port", guest: 8080, host: 8085
-  rancher_server.vm.network "forwarded_port", guest: 3000, host: 3000
-  rancher_server.vm.network "public_network", bridge: "Intel(R) 82579LM Dual Band Wireless-AC 7260" 
+ # rancher_server.vm.network "forwarded_port", guest: 8089, host: 8081
+  #rancher_server.vm.network "forwarded_port", guest: 3000, host: 3000
+  #rancher_server.vm.network "public_network", bridge: "Intel(R) 82579LM Dual Band Wireless-AC 7260" 
+  rancher_server.vm.network "private_network", type: "dhcp"
   rancher_server.ssh.forward_agent = true
    
   rancher_server.ssh.forward_agent = true
@@ -25,7 +26,7 @@ Vagrant.configure("2") do |config|
      apt-get update
      apt-get install -y wget
      wget  -qO- https://get.docker.com/|sh
-	   docker run -d --restart=unless-stopped -p 8085:8080 rancher/server
+	   docker run -d --restart=unless-stopped -p 8089:8080 rancher/server
 
     SHELL
   end
@@ -35,10 +36,7 @@ Vagrant.configure("2") do |config|
     
   rancher_client1.vm.box = "ubuntu/trusty64"
   rancher_client1.vm.hostname = "rancher-client1"
-
-  rancher_client1.vm.network "forwarded_port", guest: 8080, host: 8085
-  rancher_client1.vm.network "forwarded_port", guest: 3000, host: 3000
-  rancher_client1.vm.network "public_network", bridge: "Intel(R) 82579LM Dual Band Wireless-AC 7260" 
+  rancher_client1.vm.network "private_network", type: "dhcp"
   rancher_client1.ssh.forward_agent = true
    
   rancher_client1.ssh.forward_agent = true
@@ -57,7 +55,8 @@ Vagrant.configure("2") do |config|
     
   rancher_client2.vm.box = "ubuntu/trusty64"
   rancher_client2.vm.hostname = "rancher-client2"
-  rancher_client2.vm.network "public_network", bridge: "Intel(R) 82579LM Dual Band Wireless-AC 7260" 
+ # rancher_client2.vm.network "public_network", bridge: "Intel(R) 82579LM Dual Band Wireless-AC 7260" 
+  rancher_client2.vm.network "private_network", type: "dhcp"
   rancher_client2.ssh.forward_agent = true
    
   rancher_client2.ssh.forward_agent = true
@@ -75,7 +74,7 @@ Vagrant.configure("2") do |config|
     
   rancher_client3.vm.box = "ubuntu/trusty64"
   rancher_client3.vm.hostname = "rancher-client3"
-  rancher_client3.vm.network "public_network", bridge: "Intel(R) 82579LM Dual Band Wireless-AC 7260" 
+  rancher_client3.vm.network "private_network", type: "dhcp" 
   rancher_client3.ssh.forward_agent = true
    
   rancher_client3.ssh.forward_agent = true
