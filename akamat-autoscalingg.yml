@@ -1,0 +1,109 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Autoscaling example
+   
+Mappings:
+     ami: 
+       "usw2":
+          ubuntu14: ami-6877d008,
+          windows2012base : ami-b871aad8,
+          windows2012sql2014 : ami-3877ac58,
+          windows2012sql2016 : ami-5a74af3a
+     usw2subnets:
+        pri1:
+            "z1": "subnet-b22eaad6"
+        pri2:
+            "z2" : "subnet-682cf21e"
+        pub1:
+            "z1" : "subnet-b12eaad5"
+        pub2:
+            "z2" : "subnet-6a2cf21c"
+     usw2secgroups:
+        default:
+            "default" : "sg-1e886078"
+     az:
+        usw2a: 
+            "az1" : "us-west-2a"
+        usw2b:
+            "az2" : "us-west-2b"
+
+Resources:
+     MyAutoScalingGroup01:
+         Type : "AWS::AutoScaling::AutoScalingGroup"
+         Properties:
+            VPCZoneIdentifier: 
+                -
+                 Fn::FindInMap: ["usw2subnets", "pri1","z1"]
+                -
+                 Fn::FindInMap: ["usw2subnets","pri2","z2"]
+            LaunchConfigurationName:
+                Ref: MyLaunchConfig01
+            MinSize: '1'
+            MaxSize: '3'
+            Tags:
+              -
+                Key: Name,
+                Value : akamat-server-01, 
+                PropagateAtLaunch : true
+              -
+                Key" : Email,
+                Value : groupemail@gracenote.com, 
+                PropagateAtLaunch : true 
+
+     MyAutoScalingGroup02:
+         Type : "AWS::AutoScaling::AutoScalingGroup"
+         Properties:
+            VPCZoneIdentifier: 
+               -
+                Fn::FindInMap: ["usw2subnets", "pri1","z1"]
+               -
+                Fn::FindInMap:  ["usw2subnets","pri2","z2"]
+            LaunchConfigurationName:
+                Ref: "MyLaunchConfig02"
+            MinSize: '1'
+            MaxSize: '3'
+            Tags:
+              -
+                Key: Name,
+                Value : akamat-server-02", 
+                PropagateAtLaunch : "true"
+              -
+                Key" : Email,
+                Value : groupemail@gracenote.com, 
+                PropagateAtLaunch : true 
+     MyLaunchConfig01:
+          Type: "AWS::AutoScaling::LaunchConfiguration"
+          Properties:
+            ImageId: 
+               Fn::FindInMap: ["ami", "usw2", "ubuntu14"]
+            KeyName: "akamat"
+            IamInstanceProfile : "arn:aws:iam::520541278860:instance-profile/us-west-2-nonprod-iam-depts-instance-roles-gn5455SandBoxInstanceProfile-1CWHQV50S9OO0"
+            SecurityGroups:
+              Fn::FindInMap:  ["usw2secgroups", "default", "default"]
+            InstanceType: "c4.large"
+            BlockDeviceMappings:
+               -
+                DeviceName: "/dev/xvdh"
+                Ebs: 
+                    VolumeSize: 11,
+                    DeleteOnTermination : true   
+               -
+                DeviceName: "/dev/xvdh"
+                VirtualName : "ephemeral0"  
+            UserData:
+                Fn::Base64: !Sub |
+                    #!/bin/bash -xe
+                    mkfs.ext4 /dev/xvdh,
+                    mkdir /ebs,
+                    mount /dev/xvdh /ebs
+
+     MyLaunchConfig02:
+          Type: "AWS::AutoScaling::LaunchConfiguration"
+          Properties:
+            ImageId: 
+               Fn::FindInMap ["ami", "usw2", "ubuntu14"]
+            KeyName: "akamat"
+            IamInstanceProfile : "arn:aws:iam::520541278860:instance-profile/us-west-2-nonprod-iam-depts-instance-roles-gn5455SandBoxInstanceProfile-1CWHQV50S9OO0"
+            SecurityGroups:
+               Fn::FindInMap ["usw2secgroups", "default", "default"]
+            InstanceType: "c4.large"
